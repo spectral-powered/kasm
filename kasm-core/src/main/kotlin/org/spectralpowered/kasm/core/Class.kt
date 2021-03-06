@@ -26,15 +26,15 @@ class Class(val group: ClassGroup) : ClassNode(ASM9) {
     /**
      * Unknown Class Type
      */
-    constructor(group: ClassGroup, name: String) : this(group) {
-        this.name = name
+    constructor(group: ClassGroup, type: Type) : this(group) {
+        this.name = type.internalName
     }
 
     /**
      * Array Class Type
      */
-    constructor(group: ClassGroup, name: String, elementClass: Class) : this(group) {
-        this.name = name
+    constructor(group: ClassGroup, type: Type, elementClass: Class) : this(group) {
+        this.name = type.elementType.internalName
         this.elementClass = elementClass
     }
 
@@ -53,6 +53,10 @@ class Class(val group: ClassGroup) : ClassNode(ASM9) {
     }
 
     override fun toString(): String {
-        return this.name
+        return if(this.isArray()) {
+            "${this.name}[]"
+        } else {
+            this.name
+        }
     }
 }

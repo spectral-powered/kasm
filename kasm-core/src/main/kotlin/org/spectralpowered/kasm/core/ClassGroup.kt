@@ -22,33 +22,27 @@ class ClassGroup {
 
     private val classes = mutableMapOf<String, Class>()
     private val sharedClasses = mutableMapOf<String, Class>()
-    private val arrayClasses = mutableMapOf<String, Class>()
 
     private val merged: MutableMap<String, Class> get() {
         return mutableMapOf<String, Class>().apply {
             this.putAll(classes)
             this.putAll(sharedClasses)
-            this.putAll(arrayClasses)
         }
     }
 
     private val featureExtractor = FeatureExtractor(this)
 
     fun addClass(cls: Class): Class {
-        return this.classes.putIfAbsent(cls.name, cls) ?: cls
+        return this.classes.putIfAbsent(cls.toString(), cls) ?: cls
     }
 
     fun addSharedClass(cls: Class): Class {
-        return this.sharedClasses.putIfAbsent(cls.name, cls) ?: cls
+        return this.sharedClasses.putIfAbsent(cls.toString(), cls) ?: cls
     }
 
     fun addClass(path: Path): Class = this.addClass(this.readClass(path))
 
     fun addSharedClass(path: Path): Class = this.addSharedClass(this.readClass(path))
-
-    fun addArrayClass(cls: Class): Class {
-        return this.arrayClasses.putIfAbsent(cls.name, cls) ?: cls
-    }
 
     fun addJar(path: Path) {
         if(!path.toAbsolutePath().toString().endsWith(".jar")) {
@@ -84,6 +78,8 @@ class ClassGroup {
     }
 
     fun findOrCreate(name: String): Class {
+        val type = Type.getObjectType(name)
+
         /*
          * Check if the name is a shared class.
          */
@@ -93,17 +89,17 @@ class ClassGroup {
         /*
          * Check if the name is an array class.
          */
-        if(name[0] == '[') {
-            val elementId = name.substring(name.lastIndexOf('[') + 1)
+        if(type.sort == Type.ARRAY) {
+            val elementId = type.elementType.internalName
 
             if(elementId.isEmpty()) {
                 throw IllegalArgumentException("Invalid array class signature: $name")
             }
 
             val elementClass = this.findOrCreate(elementId)
-            val cls = Class(this, name, elementClass)
+            val cls = Class(this, Type.getObjectType(name), elementClass)
 
-            ret = addArrayClass(cls)
+            ret = addSharedClass(cls)
 
             if(ret == cls) {
                 ret.parent = this.findOrCreate("java/lang/Object")
@@ -147,7 +143,7 @@ class ClassGroup {
             }
         }
 
-        val ret = Class(this, name)
+        val ret = Class(this, Type.getObjectType(name))
         this.addSharedClass(ret)
 
         return ret
