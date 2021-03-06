@@ -29,6 +29,18 @@ project(':kasm-core') {
             "org.spectralpowered.asm:asm-tree:$asm",
             "org.spectralpowered.asm:asm-analysis:$asm"
     ]
+    requires = [':kasm-util']
+}
+
+project(':kasm-util') {
+    description = parent.description
+    depends = [
+            "org.spectralpowered.asm:asm:$asm",
+            "org.spectralpowered.asm:asm-commons:$asm",
+            "org.spectralpowered.asm:asm-util:$asm",
+            "org.spectralpowered.asm:asm-tree:$asm",
+            "org.spectralpowered.asm:asm-analysis:$asm"
+    ]
 }
 
 subprojects {

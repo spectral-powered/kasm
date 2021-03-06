@@ -1,3 +1,4 @@
 rootProject.name = 'kasm'
 
 include ':kasm-core'
+include ':kasm-util'
