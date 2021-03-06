@@ -8,7 +8,7 @@ object Test {
     fun main(args: Array<String>) {
         val group = ClassGroup()
         group.addJar(Paths.get("gamepack.jar"))
-        FeatureProcessor.process(group)
+        group.analyzeFeatures()
 
         println("Boom")
     }
