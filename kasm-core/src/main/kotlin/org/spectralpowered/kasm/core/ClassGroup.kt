@@ -22,11 +22,13 @@ class ClassGroup {
 
     private val classes = mutableMapOf<String, Class>()
     private val sharedClasses = mutableMapOf<String, Class>()
+    private val arrayClasses = mutableMapOf<String, Class>()
 
     private val merged: MutableMap<String, Class> get() {
         return mutableMapOf<String, Class>().apply {
             this.putAll(classes)
             this.putAll(sharedClasses)
+            this.putAll(arrayClasses)
         }
     }
 
@@ -43,6 +45,10 @@ class ClassGroup {
     fun addClass(path: Path): Class = this.addClass(this.readClass(path))
 
     fun addSharedClass(path: Path): Class = this.addSharedClass(this.readClass(path))
+
+    fun addArrayClass(cls: Class): Class {
+        return this.arrayClasses.putIfAbsent(cls.name, cls) ?: cls
+    }
 
     fun addJar(path: Path) {
         if(!path.toAbsolutePath().toString().endsWith(".jar")) {
@@ -78,46 +84,71 @@ class ClassGroup {
     }
 
     fun findOrCreate(name: String): Class {
-        var ret = this.classes[name]
+        /*
+         * Check if the name is a shared class.
+         */
+        var ret = this.sharedClasses[name]
         if(ret != null) return ret
 
-        ret = this.sharedClasses[name]
-        if(ret != null) return ret
+        /*
+         * Check if the name is an array class.
+         */
+        if(name[0] == '[') {
+            val elementId = name.substring(name.lastIndexOf('[') + 1)
 
-        ret = findMissingClass(name)
+            if(elementId.isEmpty()) {
+                throw IllegalArgumentException("Invalid array class signature: $name")
+            }
+
+            val elementClass = this.findOrCreate(elementId)
+            val cls = Class(this, name, elementClass)
+
+            ret = addArrayClass(cls)
+
+            if(ret == cls) {
+                ret.parent = this.findOrCreate("java/lang/Object")
+                ret.parent.children.add(ret)
+            }
+        } else {
+            ret = findMissingClass(name)
+        }
 
         return ret
     }
 
     private fun findMissingClass(name: String): Class {
-        val file: Path
-        val url = ClassLoader.getSystemResource("$name.class")
+        if(name.length > 1) {
+            var file: Path? = null
 
-        if(url != null) {
-            val uri: URI
+            if(this.classes[name] == null) {
+                val url = ClassLoader.getSystemResource("$name.class")
 
-            try {
-                uri = url.toURI()
-                var ret = Paths.get(uri)
+                if(url != null) {
+                    val uri = url.toURI()
+                    var ret = Paths.get(uri)
 
-                if(uri.scheme == "jrt" && !Files.exists(ret)) {
-                    ret = Paths.get(URI(uri.scheme, uri.userInfo, uri.host, uri.port, "/modules".plus(uri.path), uri.query, uri.fragment))
+                    if(uri.scheme == "jrt" && !Files.exists(ret)) {
+                       ret = Paths.get(URI(uri.scheme, uri.userInfo, uri.host, uri.port, "/modules".plus(uri.path), uri.query, uri.fragment))
+                    }
+
+                    file = ret
+                }
+            }
+
+            if(file != null) {
+                val cls = readClass(file)
+                val ret = this.addSharedClass(cls)
+
+                if(ret == cls) {
+                    featureExtractor.processA(ret)
                 }
 
-                file = ret
-            } catch(e : Exception) {
-                throw e
+                return ret
             }
-        } else {
-            throw RuntimeException("Unable to load missing class: $name")
         }
 
-        val cls = this.readClass(file)
-        val ret = this.addSharedClass(cls)
-
-        if(ret == cls) {
-            featureExtractor.processA(ret)
-        }
+        val ret = Class(this, name)
+        this.addSharedClass(ret)
 
         return ret
     }

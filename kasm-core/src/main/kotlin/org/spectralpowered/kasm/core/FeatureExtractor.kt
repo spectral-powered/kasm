@@ -4,6 +4,12 @@ class FeatureExtractor(val group: ClassGroup) {
 
     fun process() {
         /*
+         * Add a virtual class 'java/lang/Object' to the group.
+         */
+        group.findOrCreate("java/lang/Object")
+
+
+        /*
          * Process Stage: A
          */
         group.forEachClass { cls ->
@@ -12,6 +18,19 @@ class FeatureExtractor(val group: ClassGroup) {
     }
 
     fun processA(cls: Class) {
+        /*
+         * Add methods to class method map
+         */
+        for(i in cls.methodNodes.indices) {
+            val node = cls.methodNodes[i]
+
+            if(cls.findMethod(node.name, node.desc) == null) {
+                val m = Method(group, cls, node)
+                node.accept(m)
+                cls.methods[m.toString()] = m
+            }
+        }
+
         /*
          * Set the class parent / children
          */
