@@ -1,0 +1,40 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '1.4.30' apply false
+}
+
+apply from: 'versions.gradle'
+
+subprojects {
+    apply plugin: 'org.jetbrains.kotlin.jvm'
+
+    group 'org.spectralpowered.kasm'
+    version '1.0.0'
+
+    ext.requires = []
+    ext.depends = []
+
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven { url 'https://jitpack.io' }
+    }
+}
+
+project(':kasm-core') {
+    description = parent.description
+    depends = [
+            "org.spectralpowered.asm:asm:$asm",
+            "org.spectralpowered.asm:asm-commons:$asm",
+            "org.spectralpowered.asm:asm-util:$asm",
+            "org.spectralpowered.asm:asm-tree:$asm",
+            "org.spectralpowered.asm:asm-analysis:$asm"
+    ]
+}
+
+subprojects {
+    dependencies {
+        implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+        requires.each { projectName -> api project(projectName) }
+        depends.each { artifactName -> api artifactName }
+    }
+}
