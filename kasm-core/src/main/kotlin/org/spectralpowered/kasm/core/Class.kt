@@ -1,5 +1,7 @@
 package org.spectralpowered.kasm.core
 
+import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes.ASM9
 import org.objectweb.asm.Type
 import org.objectweb.asm.tree.ClassNode
@@ -16,8 +18,6 @@ class Class(val group: ClassGroup) : ClassNode(ASM9) {
     val interfaces = mutableSetOf<Class>()
 
     val implementers = mutableSetOf<Class>()
-
-    val innerClasses = mutableSetOf<Class>()
 
     val type: Type get() = Type.getObjectType(this.name)
 
@@ -40,6 +40,8 @@ class Class(val group: ClassGroup) : ClassNode(ASM9) {
 
     val methods = mutableMapOf<String, Method>()
 
+    val fields = mutableMapOf<String, Field>()
+
     fun hasParent(): Boolean = ::parent.isInitialized
 
     fun isShared(): Boolean = group.findSharedClass(this.name)?.let { true } ?: false
@@ -50,6 +52,38 @@ class Class(val group: ClassGroup) : ClassNode(ASM9) {
 
     fun findMethod(name: String, desc: String): Method? {
         return this.methods["${this.name}.$name$desc"]
+    }
+
+    fun findField(name: String): Field? {
+        return this.fields["${this.name}.$name"]
+    }
+
+    override fun accept(visitor: ClassVisitor) {
+        val interfacesArray = this.interfaces.map { it.name }.toTypedArray()
+
+        visitor.visit(version, access, name, genericSignature, parent.name, interfacesArray)
+
+        if(sourceFile != null || sourceDebug != null) {
+            visitor.visitSource(sourceFile, sourceDebug)
+        }
+
+        if(outerClassName != null) {
+            visitor.visitOuterClass(outerClassName, outerMethodName, outerMethodDesc)
+        }
+
+        for(i in innerClasses.indices) {
+            innerClasses[i].accept(visitor)
+        }
+
+        fields.values.forEach { field ->
+            field.accept(visitor)
+        }
+
+        methods.values.forEach { method ->
+            method.accept(visitor)
+        }
+
+        visitor.visitEnd()
     }
 
     override fun toString(): String {

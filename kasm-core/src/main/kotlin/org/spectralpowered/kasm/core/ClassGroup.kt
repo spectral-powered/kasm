@@ -30,7 +30,7 @@ class ClassGroup {
         }
     }
 
-    private val featureExtractor = FeatureExtractor(this)
+    internal val featureExtractor = FeatureExtractor(this)
 
     fun addClass(cls: Class): Class {
         return this.classes.putIfAbsent(cls.toString(), cls) ?: cls

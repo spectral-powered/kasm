@@ -17,10 +17,7 @@ class FeatureExtractor(val group: ClassGroup) {
         }
     }
 
-    fun processA(cls: Class) {
-        /*
-         * Add methods to class method map
-         */
+    fun extractMethods(cls: Class) {
         for(i in cls.methodNodes.indices) {
             val node = cls.methodNodes[i]
 
@@ -30,6 +27,29 @@ class FeatureExtractor(val group: ClassGroup) {
                 cls.methods[m.toString()] = m
             }
         }
+    }
+
+    fun extractFields(cls: Class) {
+        for(i in cls.fieldNodes.indices) {
+            val node = cls.fieldNodes[i]
+
+            if(cls.findField(node.name) == null) {
+                val f = Field(group, cls, node)
+                cls.fields[f.toString()] = f
+            }
+        }
+    }
+
+    fun processA(cls: Class) {
+        /*
+         * Add methods to class method map
+         */
+        this.extractMethods(cls)
+
+        /*
+         * Add fields to class field map.
+         */
+        this.extractFields(cls)
 
         /*
          * Set the class parent / children
