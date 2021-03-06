@@ -1,6 +1,7 @@
 package org.spectralpowered.kasm.core
 
 import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes.ASM9
 import org.objectweb.asm.Type
@@ -84,6 +85,12 @@ class Class(val group: ClassGroup) : ClassNode(ASM9) {
         }
 
         visitor.visitEnd()
+    }
+
+    fun toBytecode(): ByteArray {
+        val writer = ClassWriter(ClassWriter.COMPUTE_MAXS)
+        this.accept(writer)
+        return writer.toByteArray()
     }
 
     override fun toString(): String {

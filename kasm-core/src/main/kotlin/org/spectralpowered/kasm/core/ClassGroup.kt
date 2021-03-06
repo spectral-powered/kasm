@@ -8,8 +8,9 @@ import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.nio.file.attribute.BasicFileAttributes
 import java.util.function.BiPredicate
+import java.util.jar.JarEntry
+import java.util.jar.JarOutputStream
 
 /**
  * A group of classes.
@@ -167,6 +168,39 @@ class ClassGroup {
 
     fun forEachSharedClass(action: (Class) -> Unit) {
         sharedClasses.values.forEach(action)
+    }
+
+    fun writeToJar(path: Path) {
+        if(Files.exists(path)) {
+            path.toFile().delete()
+        }
+
+        Files.newOutputStream(path).use { writer ->
+            val jos = JarOutputStream(writer)
+
+            this.classes.values.forEach { cls ->
+                jos.putNextEntry(JarEntry(cls.name + ".class"))
+                jos.write(cls.toBytecode())
+                jos.closeEntry()
+            }
+
+            jos.close()
+        }
+    }
+
+    fun writeToDirectory(path: Path) {
+        if(!Files.isDirectory(path)) {
+            throw IOException("Provided path is not a directory.")
+        }
+
+        this.classes.values.forEach { cls ->
+            val fileName = cls.name + ".class"
+            val filePath = path.resolve(fileName)
+
+            Files.newOutputStream(filePath).use { writer ->
+                writer.write(cls.toBytecode())
+            }
+        }
     }
 
 }

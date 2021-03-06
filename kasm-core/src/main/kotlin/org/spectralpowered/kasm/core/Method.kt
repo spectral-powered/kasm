@@ -1,5 +1,6 @@
 package org.spectralpowered.kasm.core
 
+import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.Opcodes.ASM9
 import org.objectweb.asm.Type
 import org.objectweb.asm.tree.MethodNode
@@ -23,6 +24,12 @@ class Method(
     val isConstructor get() = this.name == CONSTRUCTOR
 
     var signature: Signature = Signature(this)
+
+    override fun accept(visitor: ClassVisitor) {
+        visitor.visitMethod(access, name, signature.toString(), genericSignature, exceptions.toTypedArray())?.apply {
+            accept(this)
+        }
+    }
 
     override fun toString(): String {
         return "$owner.$name$desc"
